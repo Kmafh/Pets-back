@@ -84,7 +84,7 @@ const crearSolicitud = async(req, res = response) => {
         const solici = await solicitud.save();
         const [ pets ] = await Pet.find({ active: true,_id:req.body.petId  });
         const notification = new Notifications( );
-        notification.sid = solici._id, notification.petId = solicitud.petId, notification.uid = solicitud.uid, notification.text = "Tienes una solicitud de adopción" 
+        notification.sid = solici._id, notification.petId = solicitud.petId, notification.uid = pets.uid, notification.text = "Tienes una solicitud de adopción" 
         await notification.save();
         
         res.json({
@@ -125,7 +125,17 @@ const actualizarSolicitud = async (req, res = response) => {
             { new: true } // Retornar el documento actualizado
           );
         }
-        
+        const pet = await Pet.findById( {_id: solicitudActualizado.petId});
+        let petActualizado = pet
+
+        if (pet) {
+            pet.status = solicitudActualizado.status;
+            petActualizado = await Pet.findByIdAndUpdate(
+                pet.id, // Usar el ID directamente
+              { status: pet.status }, // Especificar el campo a actualizar
+              { new: true } // Retornar el documento actualizado
+            );
+          }
           res.json({
             ok: true,
             solicitud: notificationActualizado

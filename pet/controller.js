@@ -83,7 +83,7 @@ const getPet = async (req, res = response) => {
     // TODO: Validar token y comprobar si es el pet correcto
     const id = req.params.id;
     try {
-        const petDB = await Pet.find( {_id:id} );
+        const petDB = await Pet.findById( {_id:id} );
         if ( !petDB ) {
             return res.status(404).json({
                 ok: false,
