@@ -31,6 +31,10 @@ const PetSchema = Schema({
         type: Date,
         required: true
     },
+    adoptionAt: {
+        type: Date,
+        default: new Date()
+    },
     sex: {
         type: String,
         required: true
@@ -45,15 +49,12 @@ const PetSchema = Schema({
     },
     send: {
         type: String,
-        required: true
     },
     telf: {
         type: String,
-        required: true
     },
     subject: {
         type: String,
-        required: true
     },
     history: {
         type: String,

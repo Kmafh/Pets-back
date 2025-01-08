@@ -69,6 +69,7 @@ app.use("/api/upload", require("./upload/router"));
 app.use("/api/pet", require("./pet/router"));
 app.use("/api/solicitud", require("./solicitud/router"));
 app.use("/api/notifications", require("./notifications/router"));
+app.use("/api/favorite", require("./favorite/router"));
 
 
 server.listen(port, () => {

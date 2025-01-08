@@ -28,8 +28,8 @@ const getNotifications = async(req, res) => {
     const uid = req.params.uid;
 
     try {
-        const [ notifications, total ] = await Promise.all([
-            Notification.find({ active: true,uid })
+        const [ notifications ] = await Promise.all([
+            Notification.find({ uid }).sort({ createAt: 1 })
         ]);
     
         res.json({
@@ -105,26 +105,10 @@ const actualizarNotification = async (req, res = response) => {
                 msg: 'No existe un notification por ese id'
             });
         }
-        // Actualizaciones
-        const { password, google, email,  ...campos } = req.body;
-        if ( notificationDB.email !== email ) {
-            const existeEmail = await Notification.findOne({ email });
-            if ( existeEmail ) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: 'Ya existe un notification con ese email'
-                });
-            }
-        }
-        if ( !notificationDB.google ){
-            campos.email = email;
-        } else if ( notificationDB.email !== email ) {
-            return res.status(400).json({
-                ok: false,
-                msg: 'Notification de google no pueden cambiar su correo'
-            });
-        }
+        const { ...campos } = req.body;
+
         const notificationActualizado = await Notification.findByIdAndUpdate( uid, campos, { new: true } );
+        
         res.json({
             ok: true,
             notification: notificationActualizado

@@ -1,16 +1,17 @@
 const { Schema, model } = require('mongoose');
 
-const NotificationSchema = Schema({
+const FeedbackSchema = Schema({
     uid: {
         type: String,
+        required: true
     },
-    sid: {
+    toId: {
         type: String,
         required: true
     },
-    petId: {
-        type: String,
-        required: true
+    point: {
+        type: Number,
+        default: 5
     },
     text: {
         type: String,
@@ -24,19 +25,16 @@ const NotificationSchema = Schema({
         type: Boolean,
         default:true
     },
-    new: {
-        type: Boolean,
-        default:true
-    },
+
 });
 
 
-NotificationSchema.method('toJSON', function() {
-    const { __v, _id, password, ...object } = this.toObject();
+FeedbackSchema.method('toJSON', function() {
+    const { __v, _id, ...object } = this.toObject();
     object.id = _id;
     return object;
 })
 
 
 
-module.exports = model( 'Notification', NotificationSchema );
+module.exports = model( 'Feedback', FeedbackSchema );

@@ -46,6 +46,10 @@ const SolicitudSchema = Schema({
         type: String,
         default: 'Pendiente'
     },
+    tlf: {
+        type: String,
+        required: true
+    },
 });
 
 

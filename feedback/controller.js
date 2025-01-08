@@ -1,43 +1,43 @@
 const { response } = require("express");
 
-const Pet = require("../pet/model");
+const Feedback = require("../feedback/model");
 const User = require("../user/model");
 const Solicitud = require("../solicitud/model");
 const Notification = require("../notifications/model");
 const Favorite = require("../favorite/model");
-const Feedback = require("../feedback/model");
+const Comment = require("../comments/model");
 
 const { generarJWT } = require("../helpers/jwt");
 
-const getPetsAll = async (req, res) => {
+const getFeedbacksAll = async (req, res) => {
   try {
-    const [pets] = await Promise.all([Pet.find({ active: true })]);
-    const petsWithFavorites = await Promise.all(
-      pets.map(async (pet) => {
+    const [feedbacks] = await Promise.all([Feedback.find({ active: true })]);
+    const feedbacksWithFavorites = await Promise.all(
+      feedbacks.map(async (feedback) => {
         const totalFavorites = await Favorite.countDocuments({
-          reciveId: pet.id,
-          tipe: "pet",
+          reciveId: feedback.id,
+          tipe: "feedback",
         });
         return {
-          ...pet.toObject(), // Convierte el documento a un objeto plano
+          ...feedback.toObject(), // Convierte el documento a un objeto plano
           favorites: totalFavorites, // Agrega el nuevo campo "favorites"
         };
       })
     );
-    const petsWithFavoritesAndUser = await Promise.all(
-      petsWithFavorites.map(async (pett) => {
+    const feedbacksWithFavoritesAndUser = await Promise.all(
+      feedbacksWithFavorites.map(async (feedbackt) => {
         const user = await User.findOne({
-          _id: pett.uid,
+          _id: feedbackt.uid,
         });
         return {
-          ...pett, // Convierte el documento a un objeto plano
+          ...feedbackt, // Convierte el documento a un objeto plano
           user: user,
         };
       })
     );
     res.json({
       ok: true,
-      pets: petsWithFavoritesAndUser,
+      feedbacks: feedbacksWithFavoritesAndUser,
     });
   } catch (error) {
     console.log(error);
@@ -47,19 +47,19 @@ const getPetsAll = async (req, res) => {
     });
   }
 };
-const getPets = async (req, res) => {
+const getFeedbacks = async (req, res) => {
   const uid = req.params.uid;
 
   try {
-    const [pets] = await Promise.all([
-      Pet.find({ active: true, uid }), // Obtén todas las mascotas activas del usuario
+    const [feedbacks] = await Promise.all([
+      Feedback.find({ active: true, uid }), // Obtén todas las mascotas activas del usuario
     ]);
 
     // Itera sobre cada mascota y asocia las solicitudes correspondientes
-    const petsConSolicitudes = await Promise.all(
-      pets.map(async (pet) => {
+    const feedbacksConSolicitudes = await Promise.all(
+      feedbacks.map(async (feedback) => {
         const solicitudes = await Solicitud.find({
-          petId: pet.id,
+          feedbackId: feedback.id,
           active: true,
         });
 
@@ -78,7 +78,7 @@ const getPets = async (req, res) => {
 
         // Retorna la mascota con sus solicitudes
         return {
-          ...pet._doc, // Datos de la mascota
+          ...feedback._doc, // Datos de la mascota
           solicitudes: solicitudesConUsuarios, // Solicitudes con usuarios
         };
       })
@@ -88,29 +88,29 @@ const getPets = async (req, res) => {
     ]);
     // / Añadir el parámetro `img` a cada notificación
     const notificationsWithImg = notification.map((notification) => {
-      const pet = pets.find((p) => p._id.toString() === notification.petId); // Supongamos que tienes un campo petId en las notificaciones
+      const feedback = feedbacks.find((p) => p._id.toString() === notification.feedbackId); // Supongamos que tienes un campo feedbackId en las notificaciones
       return {
         ...notification.toObject(), // Convertimos el documento a objeto simple
-        img: pet ? pet.images : null, // Añadimos la imagen si existe
+        img: feedback ? feedback.images : null, // Añadimos la imagen si existe
       };
     });
-    const [favoritesPets] = await Promise.all([
-      Favorite.find({ active: true, uid, tipe: "pet" }), // Obtén todas las mascotas activas del usuario
+    const [favoritesFeedbacks] = await Promise.all([
+      Favorite.find({ active: true, uid, tipe: "feedback" }), // Obtén todas las mascotas activas del usuario
     ]);
     const [favoritesProtected] = await Promise.all([
       Favorite.find({ active: true, uid, tipe: "protected" }), // Obtén todas las mascotas activas del usuario
     ]);
-    const petFavoritesPets = await Promise.all(
-      favoritesPets.map(async (favorite) => {
+    const feedbackFavoritesFeedbacks = await Promise.all(
+      favoritesFeedbacks.map(async (favorite) => {
         // Encuentra la mascota asociada al reciveId del favorito y selecciona solo los campos necesarios
-        const pet = await Pet.findOne({ _id: favorite.reciveId }).select(
+        const feedback = await Feedback.findOne({ _id: favorite.reciveId }).select(
           "images name country"
         );
 
-        // Combina los datos del favorito y los campos específicos del pet
+        // Combina los datos del favorito y los campos específicos del feedback
         return {
           ...favorite._doc, // Datos del favorito
-          ...pet?._doc, // Solo añade los campos img, name, y country del pet
+          ...feedback?._doc, // Solo añade los campos img, name, y country del feedback
         };
       })
     );
@@ -121,18 +121,18 @@ const getPets = async (req, res) => {
           "img name lastname country"
         );
 
-        // Combina los datos del favorito y los campos específicos del pet
+        // Combina los datos del favorito y los campos específicos del feedback
         return {
           ...favorite._doc, // Datos del favorito
-          ...user?._doc, // Solo añade los campos img, name, y country del pet
+          ...user?._doc, // Solo añade los campos img, name, y country del feedback
         };
       })
     );
     // Estructura de datos a enviar
     const data = {
-      pets: petsConSolicitudes,
+      feedbacks: feedbacksConSolicitudes,
       notification: notificationsWithImg,
-      petFav: petFavoritesPets,
+      feedbackFav: feedbackFavoritesFeedbacks,
       proFav: protectedFavoritesPro,
     };
 
@@ -149,23 +149,23 @@ const getPets = async (req, res) => {
   }
 };
 
-const getPet = async (req, res = response) => {
-  // TODO: Validar token y comprobar si es el pet correcto
+const getFeedback = async (req, res = response) => {
+  // TODO: Validar token y comprobar si es el feedback correcto
   const id = req.params.id;
   try {
-    const petDB = await Pet.findById({ _id: id });
-    if (!petDB) {
+    const feedbackDB = await Feedback.findById({ _id: id });
+    if (!feedbackDB) {
       return res.status(404).json({
         ok: false,
-        msg: "No existe un pet por ese id",
+        msg: "No existe un feedback por ese id",
       });
     }
-    const pet = await Pet.findById(id);
-    const user = await User.findOne({ _id: pet.uid });
-    const solicitud = await Solicitud.find({ petId: pet.id, active: true });
+    const feedback = await Feedback.findById(id);
+    const user = await User.findOne({ _id: feedback.uid });
+    const solicitud = await Solicitud.find({ feedbackId: feedback.id, active: true });
     const favorite = await Favorite.find({
-      tipe: "pet",
-      reciveId: pet.id,
+      tipe: "feedback",
+      reciveId: feedback.id,
       active: true,
     });
 
@@ -180,17 +180,8 @@ const getPet = async (req, res = response) => {
         };
       })
     );
-// Obtener el total de puntos de todos los feedback relacionados con el usuario
-    const totalPoints = await Feedback.aggregate([
-      { $match: { toId: user.uid } }, // Filtra los feedbacks donde toId es igual a user.uid
-      { $group: { _id: null, totalPoints: { $sum: "$points" } } }, // Suma los puntos de todos los feedbacks
-    ]);
 
-    // Si hay feedbacks, el campo totalPoints tendrá el valor, si no, será 0
-    const valore =
-      totalPoints.length > 0 ? totalPoints[0].totalPoints : 0;
-
-    const data = { pet, user, solicitud: solicitudesConUsuarios, favorite,valore };
+    const data = { feedback, user, solicitud: solicitudesConUsuarios, favorite };
     res.json({
       ok: true,
       data,
@@ -204,14 +195,14 @@ const getPet = async (req, res = response) => {
   }
 };
 
-const crearPet = async (req, res = response) => {
+const crearFeedback = async (req, res = response) => {
   try {
-    const pet = new Pet(req.body);
-    // Guardar pet
-    await pet.save();
+    const feedback = new Feedback(req.body);
+    // Guardar feedback
+    await feedback.save();
     res.json({
       ok: true,
-      pet,
+      feedback,
     });
   } catch (error) {
     console.log(error);
@@ -222,26 +213,26 @@ const crearPet = async (req, res = response) => {
   }
 };
 
-const actualizarPet = async (req, res = response) => {
-  // TODO: Validar token y comprobar si es el pet correcto
+const actualizarFeedback = async (req, res = response) => {
+  // TODO: Validar token y comprobar si es el feedback correcto
   const uid = req.params.id;
   try {
-    const petDB = await Pet.findById(uid);
-    if (!petDB) {
+    const feedbackDB = await Feedback.findById(uid);
+    if (!feedbackDB) {
       return res.status(404).json({
         ok: false,
-        msg: "No existe un pet por ese id",
+        msg: "No existe un feedback por ese id",
       });
     }
     // Actualizaciones
     const { ...campos } = req.body;
 
-    const petActualizado = await Pet.findByIdAndUpdate(uid, campos, {
+    const feedbackActualizado = await Feedback.findByIdAndUpdate(uid, campos, {
       new: true,
     });
     res.json({
       ok: true,
-      pet: petActualizado,
+      feedback: feedbackActualizado,
     });
   } catch (error) {
     console.log(error);
@@ -252,32 +243,32 @@ const actualizarPet = async (req, res = response) => {
   }
 };
 
-const adoptarPet = async (req, res = response) => {
-  // TODO: Validar token y comprobar si es el pet correcto
+const adoptarFeedback = async (req, res = response) => {
+  // TODO: Validar token y comprobar si es el feedback correcto
   const uid = req.params.id;
   try {
-    const petDB = await Pet.findById(uid);
-    if (!petDB) {
+    const feedbackDB = await Feedback.findById(uid);
+    if (!feedbackDB) {
       return res.status(404).json({
         ok: false,
-        msg: "No existe un pet por ese id",
+        msg: "No existe un feedback por ese id",
       });
     }
     // Actualizaciones
     const { ...campos } = req.body;
-    const petActualizado = await Pet.findByIdAndUpdate(uid, campos, {
+    const feedbackActualizado = await Feedback.findByIdAndUpdate(uid, campos, {
       new: true,
     });
-    if (petActualizado) {
-      // Buscar y actualizar las solicitudes con el petId correspondiente
+    if (feedbackActualizado) {
+      // Buscar y actualizar las solicitudes con el feedbackId correspondiente
       await Solicitud.updateMany(
-        { petId: petActualizado._id }, // Condición: solicitudes con el petId igual al de la mascota actualizada
+        { feedbackId: feedbackActualizado._id }, // Condición: solicitudes con el feedbackId igual al de la mascota actualizada
         { $set: { active: false } } // Actualización: cambiar active a false
       );
     }
     res.json({
       ok: true,
-      pet: petActualizado,
+      feedback: feedbackActualizado,
     });
   } catch (error) {
     console.log(error);
@@ -288,20 +279,20 @@ const adoptarPet = async (req, res = response) => {
   }
 };
 
-const borrarPet = async (req, res = response) => {
+const borrarFeedback = async (req, res = response) => {
   const uid = req.params.id;
   try {
-    const petDB = await Pet.findById(uid);
-    if (!petDB) {
+    const feedbackDB = await Feedback.findById(uid);
+    if (!feedbackDB) {
       return res.status(404).json({
         ok: false,
-        msg: "No existe un pet por ese id",
+        msg: "No existe un feedback por ese id",
       });
     }
-    await Pet.findByIdAndDelete(uid);
+    await Feedback.findByIdAndDelete(uid);
     res.json({
       ok: true,
-      msg: "Pet eliminado",
+      msg: "Feedback eliminado",
     });
   } catch (error) {
     console.log(error);
@@ -313,11 +304,11 @@ const borrarPet = async (req, res = response) => {
 };
 
 module.exports = {
-  getPets,
-  crearPet,
-  actualizarPet,
-  borrarPet,
-  getPet,
-  getPetsAll,
-  adoptarPet,
+  getFeedbacks,
+  crearFeedback,
+  actualizarFeedback,
+  borrarFeedback,
+  getFeedback,
+  getFeedbacksAll,
+  adoptarFeedback,
 };

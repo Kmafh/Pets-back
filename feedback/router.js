@@ -1,39 +1,39 @@
 /*
-    Ruta: /api/pet
+    Ruta: /api/feedback
 */
 const { Router } = require('express');
 const { check } = require('express-validator');
 const { validarCampos } = require('../middlewares/validar-campos');
 
-const { getPets, crearPet, actualizarPet, borrarPet, getPet, getPetsAll, adoptarPet } = require('../pet/controller');
+const { getFeedbacks, crearFeedback, actualizarFeedback, borrarFeedback, getFeedback, getFeedbacksAll, adoptarFeedback } = require('../feedback/controller');
 const { validarJWT } = require('../middlewares/validar-jwt');
 
 
 const router = Router();
 
 
-router.get( '/:uid', getPets );
-router.get( '/', getPetsAll );
-router.get( '/details/:id', getPet );
-router.post( '/',validarJWT,crearPet);
+router.get( '/:uid', getFeedbacks );
+router.get( '/', getFeedbacksAll );
+router.get( '/details/:id', getFeedback );
+router.post( '/',validarJWT,crearFeedback);
 
 router.put( '/:id',
     [
         validarJWT,
         validarCampos,
     ],
-    actualizarPet
+    actualizarFeedback
 );
 router.put( '/adopta/:id',
     [
         validarJWT,
         validarCampos,
     ],
-    adoptarPet
+    adoptarFeedback
 );
 router.delete( '/:id',
     validarJWT,
-    borrarPet
+    borrarFeedback
 );
 
 

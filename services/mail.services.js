@@ -20,7 +20,7 @@ async function sendMailVerification(direccion, payload) {
         const verificationLink = `${process.env.HOST_FRONT}/register?data=${encodedPayload}`;
         
         await transporter.sendMail({
-            from: '"Registro Pintter 👻" <ecocostenergy@gmail.com>',
+            from: '"Registro FindAFriend  👻" <ecocostenergy@gmail.com>',
             to: direccion,
             subject: "Confirmación de Registro",
             html: `<!DOCTYPE html>
@@ -47,7 +47,7 @@ async function sendMailVerification(direccion, payload) {
             overflow: hidden;
         }
         .header {
-            background-color: #3ac9a8;
+            background-color: #ff7043;
             color: #ffffff;
             padding: 20px;
             text-align: center;
@@ -59,7 +59,7 @@ async function sendMailVerification(direccion, payload) {
             display: inline-block;
             padding: 10px 20px;
             margin-top: 20px;
-            background-color: #3ac9a8;
+            background-color: #ff7043;
             color: #ffffff;
             text-decoration: none;
             border-radius: 5px;
@@ -76,7 +76,7 @@ async function sendMailVerification(direccion, payload) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>¡Bienvenido a Pintter!</h1>
+            <h1>¡Bienvenido a FindAFriend!</h1>
         </div>
         <div class="content">
             <p>Hola, ${encodedPayload.name}:</p>
@@ -88,7 +88,7 @@ async function sendMailVerification(direccion, payload) {
             <p>Gracias por confiar en nosotros,<br>El equipo de EcoCost</p>
         </div>
         <div class="footer">
-            <p>© 2024 EcoCost. Todos los derechos reservados.</p>
+            <p>© 2024 FindAFriend. Todos los derechos reservados.</p>
             <p>Si no solicitaste este correo, puedes ignorarlo.</p>
         </div>
     </div>
