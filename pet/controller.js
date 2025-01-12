@@ -87,13 +87,31 @@ const getPets = async (req, res) => {
       Notification.find({ uid }).sort({ createAt: 1 }),
     ]);
     // / Añadir el parámetro `img` a cada notificación
-    const notificationsWithImg = notification.map((notification) => {
-      const pet = pets.find((p) => p._id.toString() === notification.petId); // Supongamos que tienes un campo petId en las notificaciones
-      return {
-        ...notification.toObject(), // Convertimos el documento a objeto simple
-        img: pet ? pet.images : null, // Añadimos la imagen si existe
-      };
-    });
+    const notificationsWithImg = await Promise.all(
+      notification.map(async (notification) => {
+        const pet = pets.find((p) => p._id.toString() === notification.petId); // Supongamos que tienes un campo petId en las notificaciones
+        const solicitud = await Solicitud.findById({ _id: notification.sid });
+    
+        let solicitudWithUser = null;
+    
+        if (solicitud) {
+          const user = await User.findById({ _id: solicitud.uid }).select(
+            "name lastname email img"
+          );
+          solicitudWithUser = {
+            ...solicitud.toObject(), // Convertimos a objeto plano
+            user, // Añadimos el usuario
+          };
+        }
+    
+        return {
+          ...notification.toObject(), // Convertimos el documento de la notificación a objeto plano
+          pet,
+          solicitud: solicitudWithUser, // Usamos el objeto modificado
+        };
+      })
+    );
+    
     const [favoritesPets] = await Promise.all([
       Favorite.find({ active: true, uid, tipe: "pet" }), // Obtén todas las mascotas activas del usuario
     ]);

@@ -15,6 +15,7 @@ const router = Router();
 router.get( '/', validarJWT , getUsers );
 router.get('/protec', getUsersProtected);
 router.get( '/:id', getUser );
+router.get( '/data/:id', getUser );
 router.post( '/',
     [
         check('name', 'El name es obligatorio').not().isEmpty(),

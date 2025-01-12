@@ -1,6 +1,7 @@
 const { response } = require("express");
 
 const Solicitud = require("../solicitud/model");
+const HistorialSolicitud = require("../solicitud/historialmodel");
 const Notifications = require("../notifications/model");
 const User = require("../user/model");
 const Pet = require("../pet/model");
@@ -70,12 +71,39 @@ const getSolicitud = async (req, res = response) => {
     });
   }
 };
+const getHistorial = async (req, res = response) => {
+  // TODO: Validar token y comprobar si es el solicitud correcto
+  const id = req.params.id;
+  try {
+    const historial = await HistorialSolicitud.find({ sid: id });
+    if (!historial) {
+      return res.status(404).json({
+        ok: false,
+        msg: "No existe un solicitud por ese id",
+      });
+    }
+    res.json({
+      ok: true,
+      historial,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      ok: false,
+      msg: "Error inesperado",
+    });
+  }
+};
 
 const crearSolicitud = async (req, res = response) => {
   try {
     const solicitud = new Solicitud(req.body);
     // Guardar solicitud
+    const historialSolicitud = new HistorialSolicitud();
+    historialSolicitud.sid = solicitud.id;
+    historialSolicitud.status = solicitud.status;
     const solici = await solicitud.save();
+    await historialSolicitud.save();
     const [pets] = await Pet.find({ active: true, _id: req.body.petId });
     const notification = new Notifications();
     (notification.sid = solici._id),
@@ -144,9 +172,12 @@ const actualizarSolicitud = async (req, res = response) => {
           " ha finalizado. Este peludo tiene amor infinito para darte. Cuidense! y esperamos veros felices en BuddyShelter. " +
           solicitudActualizado.status,
       });
-  
+      const historialSolicitud = new HistorialSolicitud();
+      historialSolicitud.sid = solicitudActualizado.id;
+      historialSolicitud.status = solicitudActualizado.status;
+      await historialSolicitud.save();
       notificationSaveChangeStatus.save();
-    }else {
+    } else {
       const notificationSaveChangeStatus = new Notifications({
         sid: solicitudActualizado.id,
         petId: notification.petId,
@@ -157,10 +188,10 @@ const actualizarSolicitud = async (req, res = response) => {
           " ha cambiado a: " +
           solicitudActualizado.status,
       });
-  
+
       notificationSaveChangeStatus.save();
     }
-    
+
     res.json({
       ok: true,
       solicitud: notificationActualizado,
@@ -205,4 +236,5 @@ module.exports = {
   borrarSolicitud,
   getSolicitud,
   getSolicitudsAll,
+  getHistorial,
 };
