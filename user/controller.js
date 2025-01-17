@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 const Favorite = require("../favorite/model");
 const Feedback = require("../feedback/model");
 const User = require("../user/model");
+const Pet = require("../pet/model");
+const Solicitud = require("../solicitud/model");
+const Notification = require("../notifications/model");
 const { generarJWT } = require("../helpers/jwt");
 
 const getUsers = async (req, res) => {
@@ -58,50 +61,121 @@ const getUsersProtected = async (req, res = response) => {
   }
 };
 const getUser = async (req, res = response) => {
-  // TODO: Validar token y comprobar si es el usuario correcto
   const uid = req.params.id;
+  let notificationsWithImg = null;
+  let solicitudWithPetAndUsers = null;
+  let solicitudRecibida = null;
+
   try {
-    const usuarioDB = await User.find({ _id: uid });
+    const usuarioDB = await User.findById(uid).lean();
     if (!usuarioDB) {
       return res.status(404).json({
         ok: false,
         msg: "No existe un usuario por ese id",
       });
     }
-    const user = await User.findById(
-      uid,
-      "name lastname email img tipe createAt city country"
+
+    const favorites = await Favorite.find({ uid }).lean();
+    const favoritesWithData = await Promise.all(
+      favorites.map(async (favorite) => {
+        const pet = await Pet.findById(favorite.reciveId).lean();
+        const protected = await User.findById(favorite.reciveId).lean();
+        return {
+          ...pet,
+          ...protected,
+        };
+      })
     );
-    const favoritesProtected = await Favorite.find({
-      active: true,
-      reciveId: uid,
-      tipe: "protected",
-    }); // Obtén todas las mascotas activas del usuario
 
-    // Obtener el total de puntos de todos los feedback relacionados con el usuario
     const totalPoints = await Feedback.aggregate([
-      { $match: { toId: user.uid } }, // Filtra los feedbacks donde toId es igual a user.uid
-      { $group: { _id: null, totalPoints: { $sum: "$points" } } }, // Suma los puntos de todos los feedbacks
+      { $match: { toId: usuarioDB._id } },
+      { $group: { _id: null, totalPoints: { $sum: "$points" } } },
     ]);
+    const valore = totalPoints.length > 0 ? totalPoints[0].totalPoints : 0;
 
-    // Si hay feedbacks, el campo totalPoints tendrá el valor, si no, será 0
-    const valore =
-      totalPoints.length > 0 ? totalPoints[0].totalPoints : 0;
+    const pets = await Pet.find({ active: true, uid }).lean();
+
+    // Obtener solicitudes recibidas (todas las solicitudes asociadas a las mascotas del usuario)
+    const solicitudRecibidaRaw = await Solicitud.find({
+      petId: { $in: pets.map((pet) => pet._id) },
+    }).lean();
+
+    solicitudRecibida = await Promise.all(
+      solicitudRecibidaRaw.map(async (sol) => {
+        const user = await User.findById(sol.uid)
+          .select("name lastname email img")
+          .lean();
+        const pet = pets.find((p) => p._id.equals(sol.petId));
+        return { ...sol, user, pet };
+      })
+    );
+
+    const notification = await Notification.find({ uid })
+      .sort({ createAt: 1 })
+      .lean();
+    if (notification) {
+      notificationsWithImg = await Promise.all(
+        notification.map(async (notif) => {
+          const pet = await Pet.findById(notif.petId).lean();
+          const solicitud = await Solicitud.findById(notif.sid);
+          let user = null;
+          if (solicitud) {
+            user = await User.findById(solicitud.uid)
+              .select("name lastname email img")
+              .lean();
+          }
+
+          return {
+            ...notif,
+            pet,
+            solicitud,
+            user,
+          };
+        })
+      );
+    }
+
+    const solicitud = await Solicitud.find({ uid })
+      .sort({ createAt: 1 })
+      .lean();
+    if (solicitud) {
+      solicitudWithPetAndUsers = await Promise.all(
+        solicitud.map(async (resp) => {
+          if (resp) {
+            const user = await User.findById(resp.uid)
+              .select("name lastname email img")
+              .lean();
+            const pet = await Pet.findById(resp.petId).lean();
+            return {
+              ...resp,
+              user,
+              pet,
+            };
+          }
+        })
+      );
+    }
 
     res.json({
       ok: true,
-      user,
-      favoritesProtected,
-      valore
+      user: usuarioDB || null,
+      favorites: favoritesWithData || null,
+      valore,
+      pets, // Mascotas del usuario
+      notification: notificationsWithImg || null,
+      solicitudes: solicitudWithPetAndUsers || null, // Solicitudes enviadas
+      solicitudRecibida: solicitudRecibida || null, // Solicitudes recibidas asociadas a las mascotas
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({
       ok: false,
       msg: "Error inesperado",
     });
   }
 };
+
+
 
 const crearUser = async (req, res = response) => {
   const { email, password } = req.body;

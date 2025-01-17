@@ -172,10 +172,7 @@ const actualizarSolicitud = async (req, res = response) => {
           " ha finalizado. Este peludo tiene amor infinito para darte. Cuidense! y esperamos veros felices en BuddyShelter. " +
           solicitudActualizado.status,
       });
-      const historialSolicitud = new HistorialSolicitud();
-      historialSolicitud.sid = solicitudActualizado.id;
-      historialSolicitud.status = solicitudActualizado.status;
-      await historialSolicitud.save();
+      
       notificationSaveChangeStatus.save();
     } else {
       const notificationSaveChangeStatus = new Notifications({
@@ -191,7 +188,10 @@ const actualizarSolicitud = async (req, res = response) => {
 
       notificationSaveChangeStatus.save();
     }
-
+    const historialSolicitud = new HistorialSolicitud();
+    historialSolicitud.sid = solicitudActualizado.id;
+    historialSolicitud.status = solicitudActualizado.status;
+    await historialSolicitud.save();
     res.json({
       ok: true,
       solicitud: notificationActualizado,
